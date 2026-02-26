@@ -47,14 +47,19 @@ figma.showUI(__html__, { width: 450, height: 600 });
 // 初始化
 initFontLibrary();
 
+// 缓存本地文本样式
+let cachedTextStyles: TextStyle[] | null = null;
+
 // 获取 Typography 样式名称
-function getTypographyName(node: TextNode): string | undefined {
+async function getTypographyName(node: TextNode): Promise<string | undefined> {
   // 获取节点的文本样式 ID
   const textStyleId = node.textStyleId;
   if (textStyleId && typeof textStyleId === 'string') {
-    // 查找本地文本样式
-    const textStyles = figma.getLocalTextStyles();
-    const style = textStyles.find(s => s.id === textStyleId);
+    // 使用异步 API 获取本地文本样式
+    if (!cachedTextStyles) {
+      cachedTextStyles = await figma.getLocalTextStylesAsync();
+    }
+    const style = cachedTextStyles.find(s => s.id === textStyleId);
     if (style) {
       return style.name;
     }
@@ -63,14 +68,14 @@ function getTypographyName(node: TextNode): string | undefined {
 }
 
 // 递归遍历节点，提取所有文本节点的字体信息
-function extractFontsFromNode(node: SceneNode): FontInfo[] {
+async function extractFontsFromNode(node: SceneNode): Promise<FontInfo[]> {
   const fonts: FontInfo[] = [];
   
   // 如果是文本节点
   if (node.type === 'TEXT') {
     const fontName = node.fontName;
     const fontSize = node.fontSize;
-    const typographyName = getTypographyName(node);
+    const typographyName = await getTypographyName(node);
     
     // fontName 可能是 Symbol (mixed) 或 FontName 对象
     if (typeof fontName === 'object' && fontName !== null) {
@@ -87,7 +92,8 @@ function extractFontsFromNode(node: SceneNode): FontInfo[] {
   // 如果节点有子节点，递归遍历
   if ('children' in node && Array.isArray(node.children)) {
     for (const child of node.children) {
-      fonts.push(...extractFontsFromNode(child as SceneNode));
+      const childFonts = await extractFontsFromNode(child as SceneNode);
+      fonts.push(...childFonts);
     }
   }
   
@@ -108,7 +114,10 @@ function deduplicateFonts(fonts: FontInfo[]): FontInfo[] {
 }
 
 // 处理选中节点 - 提取字体供预览
-function processSelectionForPreview() {
+async function processSelectionForPreview() {
+  // 清空缓存，确保获取最新的文本样式
+  cachedTextStyles = null;
+  
   const selection = figma.currentPage.selection;
   
   if (selection.length === 0) {
@@ -120,7 +129,8 @@ function processSelectionForPreview() {
   
   // 遍历所有选中的节点
   for (const node of selection) {
-    allFonts.push(...extractFontsFromNode(node));
+    const fonts = await extractFontsFromNode(node);
+    allFonts.push(...fonts);
   }
   
   // 去重
@@ -135,7 +145,7 @@ function processSelectionForPreview() {
 
 // 监听选择变化 - 自动预览
 figma.on('selectionchange', () => {
-  processSelectionForPreview();
+  processSelectionForPreview().catch(console.error);
 });
 
 // 监听 UI 消息
@@ -177,4 +187,4 @@ figma.ui.onmessage = async (msg) => {
 };
 
 // 初始预览
-processSelectionForPreview();
+processSelectionForPreview().catch(console.error);
