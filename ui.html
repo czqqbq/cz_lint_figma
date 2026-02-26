@@ -12,8 +12,9 @@
     body {
       font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
       padding: 16px;
-      background: #fff;
+      background: #f5f5f5;
       color: #333;
+      min-height: 100vh;
     }
     
     h2 {
@@ -23,16 +24,65 @@
       color: #000;
     }
     
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
     .subtitle {
       font-size: 12px;
       color: #666;
       margin-bottom: 16px;
     }
     
+    /* Tab 切换 */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 8px;
+    }
+    
+    .tab {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: none;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover {
+      background: #eee;
+    }
+    
+    .tab.active {
+      background: #18a0fb;
+      color: white;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* 字体列表 */
     .font-list {
+      background: white;
       border: 1px solid #e5e5e5;
       border-radius: 6px;
-      max-height: 350px;
+      max-height: 300px;
       overflow-y: auto;
     }
     
@@ -40,8 +90,8 @@
       padding: 12px;
       border-bottom: 1px solid #f0f0f0;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      align-items: flex-start;
+      gap: 10px;
     }
     
     .font-item:last-child {
@@ -49,7 +99,21 @@
     }
     
     .font-item:hover {
-      background: #f9f9f9;
+      background: #fafafa;
+    }
+    
+    .font-checkbox {
+      margin-top: 2px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    
+    .font-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     
     .font-name {
@@ -58,13 +122,101 @@
       color: #000;
     }
     
+    .font-typography {
+      font-size: 11px;
+      color: #18a0fb;
+      background: rgba(24, 160, 251, 0.1);
+      padding: 2px 6px;
+      border-radius: 3px;
+      display: inline-block;
+      width: fit-content;
+    }
+    
     .font-details {
       font-size: 11px;
       color: #888;
       display: flex;
       gap: 12px;
+      flex-wrap: wrap;
     }
     
+    .font-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .btn-icon {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .btn-icon:hover {
+      background: #f0f0f0;
+      color: #d32f2f;
+    }
+    
+    /* 按钮 */
+    .btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background: #18a0fb;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0d8ce0;
+    }
+    
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .btn-danger {
+      background: #ffebee;
+      color: #d32f2f;
+    }
+    
+    .btn-danger:hover {
+      background: #ffcdd2;
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: space-between;
+    }
+    
+    .actions-left, .actions-right {
+      display: flex;
+      gap: 8px;
+    }
+    
+    /* 空状态 */
     .empty-state {
       padding: 40px 20px;
       text-align: center;
@@ -77,59 +229,256 @@
       color: #666;
       margin-bottom: 8px;
     }
+    
+    /* 选中计数 */
+    .selection-count {
+      font-size: 11px;
+      color: #18a0fb;
+      background: rgba(24, 160, 251, 0.1);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    
+    /* 分隔线 */
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 16px 0;
+    }
+    
+    /* 提示信息 */
+    .tip {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: #fafafa;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <h2>📝 字体库提取器</h2>
-  <p class="subtitle">选中 Frame 或 Layer，自动提取其中所有字体样式</p>
+  <h2>📝 字体库管理器</h2>
+  <p class="subtitle">选中 Frame 或 Layer，预览并确认添加到字体库</p>
   
-  <div id="count" class="count"></div>
-  <div id="fontList" class="font-list">
-    <div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('preview')">📋 提取预览</button>
+    <button class="tab" onclick="switchTab('library')">📚 我的字体库 <span id="libCount"></span></button>
+  </div>
+  
+  <!-- 预览 Tab -->
+  <div id="previewTab" class="tab-content active">
+    <div class="tip">💡 选中 Figma 中的节点，下方会显示检测到的字体。勾选后点击「确认添加」保存到字体库。</div>
+    
+    <h3>
+      检测到的字体
+      <span id="previewCount" class="selection-count">0</span>
+    </h3>
+    
+    <div id="previewList" class="font-list">
+      <div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>
+    </div>
+    
+    <div class="actions">
+      <div class="actions-left">
+        <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+        <button class="btn btn-secondary" onclick="deselectAll()">取消全选</button>
+      </div>
+      <div class="actions-right">
+        <button class="btn btn-primary" id="confirmBtn" onclick="confirmFonts()" disabled>确认添加</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 字体库 Tab -->
+  <div id="libraryTab" class="tab-content">
+    <h3>
+      已保存的字体库
+      <button class="btn btn-danger" onclick="clearLibrary()">清空</button>
+    </h3>
+    
+    <div class="tip">这些字体将作为后续检查的标准</div>
+    
+    <div id="libraryList" class="font-list">
+      <div class="empty-state">字体库为空，先去「提取预览」添加字体吧</div>
+    </div>
   </div>
 
   <script>
-    const fontListEl = document.getElementById('fontList');
-    const countEl = document.getElementById('count');
+    // 当前预览的字体列表
+    let previewFonts = [];
+    // 选中的字体索引
+    let selectedIndices = new Set();
+    // 字体库
+    let fontLibrary = [];
     
-    onmessage = (event) => {
-      const message = event.data.pluginMessage;
+    const previewListEl = document.getElementById('previewList');
+    const libraryListEl = document.getElementById('libraryList');
+    const previewCountEl = document.getElementById('previewCount');
+    const libCountEl = document.getElementById('libCount');
+    const confirmBtn = document.getElementById('confirmBtn');
+    
+    // Tab 切换
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       
-      if (message.type === 'no-selection') {
-        fontListEl.innerHTML = '<div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>';
-        countEl.textContent = '';
+      if (tab === 'preview') {
+        document.querySelector('.tab:nth-child(1)').classList.add('active');
+        document.getElementById('previewTab').classList.add('active');
+      } else {
+        document.querySelector('.tab:nth-child(2)').classList.add('active');
+        document.getElementById('libraryTab').classList.add('active');
+        renderLibrary();
+      }
+    }
+    
+    // 渲染预览列表
+    function renderPreview() {
+      if (previewFonts.length === 0) {
+        previewListEl.innerHTML = '<div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>';
+        previewCountEl.textContent = '0';
+        updateConfirmButton();
         return;
       }
       
-      if (message.type === 'fonts') {
-        const fonts = message.data;
-        
-        if (fonts.length === 0) {
-          fontListEl.innerHTML = '<div class="empty-state">选中的内容中没有找到文本</div>';
-          countEl.textContent = '';
-          return;
-        }
-        
-        countEl.textContent = `共找到 ${fonts.length} 种字体样式`;
-        
-        fontListEl.innerHTML = fonts.map(font => `
-          <div class="font-item">
+      previewCountEl.textContent = `${selectedIndices.size}/${previewFonts.length}`;
+      
+      previewListEl.innerHTML = previewFonts.map((font, index) => `
+        <div class="font-item">
+          <input type="checkbox" class="font-checkbox" 
+                 ${selectedIndices.has(index) ? 'checked' : ''} 
+                 onchange="toggleSelection(${index})">
+          <div class="font-info">
             <div class="font-name">${escapeHtml(font.name)}</div>
+            ${font.typographyName ? `<div class="font-typography">📎 ${escapeHtml(font.typographyName)}</div>` : ''}
             <div class="font-details">
               <span>字重: ${font.fontWeight}</span>
               <span>样式: ${escapeHtml(font.style)}</span>
               <span>大小: ${font.size}px</span>
             </div>
           </div>
-        `).join('');
-      }
-    };
+        </div>
+      `).join('');
+      
+      updateConfirmButton();
+    }
     
+    // 渲染字体库
+    function renderLibrary() {
+      libCountEl.textContent = fontLibrary.length > 0 ? `(${fontLibrary.length})` : '';
+      
+      if (fontLibrary.length === 0) {
+        libraryListEl.innerHTML = '<div class="empty-state">字体库为空，先去「提取预览」添加字体吧</div>';
+        return;
+      }
+      
+      libraryListEl.innerHTML = fontLibrary.map(font => `
+        <div class="font-item">
+          <div class="font-info">
+            <div class="font-name">${escapeHtml(font.name)}</div>
+            ${font.typographyName ? `<div class="font-typography">📎 ${escapeHtml(font.typographyName)}</div>` : ''}
+            <div class="font-details">
+              <span>字重: ${font.fontWeight}</span>
+              <span>样式: ${escapeHtml(font.style)}</span>
+              <span>大小: ${font.size}px</span>
+            </div>
+          </div>
+          <div class="font-actions">
+            <button class="btn-icon" onclick="removeFont('${font.id}')" title="删除">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // 切换选中
+    function toggleSelection(index) {
+      if (selectedIndices.has(index)) {
+        selectedIndices.delete(index);
+      } else {
+        selectedIndices.add(index);
+      }
+      previewCountEl.textContent = `${selectedIndices.size}/${previewFonts.length}`;
+      updateConfirmButton();
+    }
+    
+    // 全选
+    function selectAll() {
+      for (let i = 0; i < previewFonts.length; i++) {
+        selectedIndices.add(i);
+      }
+      renderPreview();
+    }
+    
+    // 取消全选
+    function deselectAll() {
+      selectedIndices.clear();
+      renderPreview();
+    }
+    
+    // 更新确认按钮状态
+    function updateConfirmButton() {
+      confirmBtn.disabled = selectedIndices.size === 0;
+      confirmBtn.textContent = `确认添加 (${selectedIndices.size})`;
+    }
+    
+    // 确认添加字体到库
+    function confirmFonts() {
+      const fontsToAdd = Array.from(selectedIndices).map(i => previewFonts[i]);
+      parent.postMessage({ pluginMessage: { type: 'confirm-fonts', data: fontsToAdd } }, '*');
+      selectedIndices.clear();
+      renderPreview();
+    }
+    
+    // 从库中删除字体
+    function removeFont(fontId) {
+      parent.postMessage({ pluginMessage: { type: 'remove-font', data: fontId } }, '*');
+    }
+    
+    // 清空字体库
+    function clearLibrary() {
+      if (confirm('确定要清空字体库吗？')) {
+        parent.postMessage({ pluginMessage: { type: 'clear-library' } }, '*');
+      }
+    }
+    
+    // HTML 转义
     function escapeHtml(text) {
+      if (!text) return '';
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
+    
+    // 监听插件消息
+    onmessage = (event) => {
+      const message = event.data.pluginMessage;
+      
+      switch (message.type) {
+        case 'no-selection':
+          previewFonts = [];
+          selectedIndices.clear();
+          renderPreview();
+          break;
+          
+        case 'preview-fonts':
+          previewFonts = message.data;
+          selectedIndices.clear();
+          // 自动选中所有
+          for (let i = 0; i < previewFonts.length; i++) {
+            selectedIndices.add(i);
+          }
+          renderPreview();
+          break;
+          
+        case 'library-update':
+          fontLibrary = message.data;
+          if (document.getElementById('libraryTab').classList.contains('active')) {
+            renderLibrary();
+          }
+          break;
+      }
+    };
   </script>
 </body>
 </html>
