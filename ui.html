@@ -1,14 +1,135 @@
-
-  <h2>Selection Change Observer</h2>
-  <p>Observe the contents of figma.selection change as you change the selection in the file.</p>
-  <p>ID of selection is: </p>
-  <p id=selection></p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 16px;
+      background: #fff;
+      color: #333;
+    }
+    
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #000;
+    }
+    
+    .subtitle {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    
+    .font-list {
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      max-height: 350px;
+      overflow-y: auto;
+    }
+    
+    .font-item {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .font-item:last-child {
+      border-bottom: none;
+    }
+    
+    .font-item:hover {
+      background: #f9f9f9;
+    }
+    
+    .font-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #000;
+    }
+    
+    .font-details {
+      font-size: 11px;
+      color: #888;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+    }
+    
+    .count {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📝 字体库提取器</h2>
+  <p class="subtitle">选中 Frame 或 Layer，自动提取其中所有字体样式</p>
+  
+  <div id="count" class="count"></div>
+  <div id="fontList" class="font-list">
+    <div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>
+  </div>
 
   <script>
-
-  onmessage = (event) => {
-    document.getElementById('selection').innerHTML = event.data.pluginMessage[0] ? event.data.pluginMessage[0].id : 'No selection';
-  }
-
+    const fontListEl = document.getElementById('fontList');
+    const countEl = document.getElementById('count');
+    
+    onmessage = (event) => {
+      const message = event.data.pluginMessage;
+      
+      if (message.type === 'no-selection') {
+        fontListEl.innerHTML = '<div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>';
+        countEl.textContent = '';
+        return;
+      }
+      
+      if (message.type === 'fonts') {
+        const fonts = message.data;
+        
+        if (fonts.length === 0) {
+          fontListEl.innerHTML = '<div class="empty-state">选中的内容中没有找到文本</div>';
+          countEl.textContent = '';
+          return;
+        }
+        
+        countEl.textContent = `共找到 ${fonts.length} 种字体样式`;
+        
+        fontListEl.innerHTML = fonts.map(font => `
+          <div class="font-item">
+            <div class="font-name">${escapeHtml(font.name)}</div>
+            <div class="font-details">
+              <span>字重: ${font.fontWeight}</span>
+              <span>样式: ${escapeHtml(font.style)}</span>
+              <span>大小: ${font.size}px</span>
+            </div>
+          </div>
+        `).join('');
+      }
+    };
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
   </script>
-  
+</body>
+</html>
