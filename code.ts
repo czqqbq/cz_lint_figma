@@ -148,6 +148,63 @@ figma.on('selectionchange', () => {
   processSelectionForPreview().catch(console.error);
 });
 
+// 校验结果接口
+interface ValidationResult {
+  nodeName: string;
+  nodeType: string;
+  textContent: string;
+  parentName?: string;
+}
+
+// 递归扫描页面，找出没有 Typography 的文本节点
+async function scanPageForValidation(): Promise<ValidationResult[]> {
+  const results: ValidationResult[] = [];
+  
+  async function scanNode(node: SceneNode, parentName?: string) {
+    // 如果是文本节点，检查是否有 Typography
+    if (node.type === 'TEXT') {
+      const textStyleId = node.textStyleId;
+      // 如果没有绑定 Typography 样式，或者样式 ID 无效
+      if (!textStyleId || (typeof textStyleId === 'symbol')) {
+        results.push({
+          nodeName: node.name,
+          nodeType: node.type,
+          textContent: node.characters.substring(0, 50), // 只显示前50个字符
+          parentName: parentName
+        });
+      } else if (typeof textStyleId === 'string') {
+        // 有 textStyleId，但需要检查是否对应有效的 Typography
+        if (!cachedTextStyles) {
+          cachedTextStyles = await figma.getLocalTextStylesAsync();
+        }
+        const style = cachedTextStyles.find(s => s.id === textStyleId);
+        if (!style || !style.name) {
+          results.push({
+            nodeName: node.name,
+            nodeType: node.type,
+            textContent: node.characters.substring(0, 50),
+            parentName: parentName
+          });
+        }
+      }
+    }
+    
+    // 递归遍历子节点，传递当前节点名字作为父级名字
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
+        await scanNode(child as SceneNode, node.name);
+      }
+    }
+  }
+  
+  // 扫描当前页面的所有顶层节点
+  for (const node of figma.currentPage.children) {
+    await scanNode(node);
+  }
+  
+  return results;
+}
+
 // 监听 UI 消息
 figma.ui.onmessage = async (msg) => {
   switch (msg.type) {
@@ -178,6 +235,17 @@ figma.ui.onmessage = async (msg) => {
       fontLibrary = [];
       await saveFontLibrary();
       figma.notify('字体库已清空');
+      break;
+      
+    case 'validate-fonts':
+      // 执行字体校验
+      cachedTextStyles = null;
+      figma.notify('正在扫描页面...');
+      const validationResults = await scanPageForValidation();
+      figma.ui.postMessage({
+        type: 'validation-results',
+        data: validationResults
+      });
       break;
       
     case 'close':

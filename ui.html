@@ -255,6 +255,77 @@
       background: #fafafa;
       border-radius: 4px;
     }
+    
+    /* 校验结果项 */
+    .validation-item {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .validation-item:last-child {
+      border-bottom: none;
+    }
+    
+    .validation-item:hover {
+      background: #fafafa;
+    }
+    
+    .validation-parent {
+      font-size: 12px;
+      font-weight: 600;
+      color: #d32f2f;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .validation-parent::before {
+      content: "📁";
+      font-size: 10px;
+    }
+    
+    .validation-node {
+      font-size: 11px;
+      color: #666;
+      padding-left: 16px;
+    }
+    
+    .validation-text {
+      font-size: 11px;
+      color: #999;
+      padding-left: 16px;
+      font-style: italic;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .validation-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #ffebee;
+      color: #d32f2f;
+      width: fit-content;
+    }
+    
+    .success-message {
+      padding: 40px 20px;
+      text-align: center;
+      color: #4caf50;
+      font-size: 14px;
+    }
+    
+    .scanning {
+      padding: 40px 20px;
+      text-align: center;
+      color: #18a0fb;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -264,6 +335,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('preview')">📋 提取预览</button>
     <button class="tab" onclick="switchTab('library')">📚 我的字体库 <span id="libCount"></span></button>
+    <button class="tab" onclick="switchTab('validate')">🔍 字体校验 <span id="validateCount"></span></button>
   </div>
   
   <!-- 预览 Tab -->
@@ -303,6 +375,24 @@
       <div class="empty-state">字体库为空，先去「提取预览」添加字体吧</div>
     </div>
   </div>
+  
+  <!-- 字体校验 Tab -->
+  <div id="validateTab" class="tab-content">
+    <div class="tip">🔍 扫描当前页面所有 Frame/Layer，检查文本是否使用了 Typography 样式。未使用的会列出父级 Layer 名称方便搜索。</div>
+    
+    <h3>
+      校验结果
+      <span id="validateResultCount" class="selection-count">0</span>
+    </h3>
+    
+    <div class="actions" style="margin-bottom: 12px;">
+      <button class="btn btn-primary" onclick="startValidation()">🔍 开始扫描</button>
+    </div>
+    
+    <div id="validateList" class="font-list">
+      <div class="empty-state">点击「开始扫描」检查页面字体规范</div>
+    </div>
+  </div>
 
   <script>
     // 当前预览的字体列表
@@ -311,11 +401,16 @@
     let selectedIndices = new Set();
     // 字体库
     let fontLibrary = [];
+    // 校验结果
+    let validationResults = [];
     
     const previewListEl = document.getElementById('previewList');
     const libraryListEl = document.getElementById('libraryList');
+    const validateListEl = document.getElementById('validateList');
     const previewCountEl = document.getElementById('previewCount');
     const libCountEl = document.getElementById('libCount');
+    const validateCountEl = document.getElementById('validateCount');
+    const validateResultCountEl = document.getElementById('validateResultCount');
     const confirmBtn = document.getElementById('confirmBtn');
     
     // Tab 切换
@@ -326,10 +421,14 @@
       if (tab === 'preview') {
         document.querySelector('.tab:nth-child(1)').classList.add('active');
         document.getElementById('previewTab').classList.add('active');
-      } else {
+      } else if (tab === 'library') {
         document.querySelector('.tab:nth-child(2)').classList.add('active');
         document.getElementById('libraryTab').classList.add('active');
         renderLibrary();
+      } else if (tab === 'validate') {
+        document.querySelector('.tab:nth-child(3)').classList.add('active');
+        document.getElementById('validateTab').classList.add('active');
+        renderValidationResults();
       }
     }
     
@@ -442,6 +541,32 @@
       }
     }
     
+    // 开始字体校验
+    function startValidation() {
+      validateListEl.innerHTML = '<div class="scanning">🔍 正在扫描页面，请稍候...</div>';
+      parent.postMessage({ pluginMessage: { type: 'validate-fonts' } }, '*');
+    }
+    
+    // 渲染校验结果
+    function renderValidationResults() {
+      validateCountEl.textContent = validationResults.length > 0 ? `(${validationResults.length})` : '';
+      validateResultCountEl.textContent = validationResults.length;
+      
+      if (validationResults.length === 0) {
+        validateListEl.innerHTML = '<div class="empty-state">点击「开始扫描」检查页面字体规范</div>';
+        return;
+      }
+      
+      validateListEl.innerHTML = validationResults.map(result => `
+        <div class="validation-item">
+          <div class="validation-parent">${escapeHtml(result.parentName || '未命名图层')}</div>
+          <div class="validation-node">文本节点: ${escapeHtml(result.nodeName)} (${result.nodeType})</div>
+          <div class="validation-text">"${escapeHtml(result.textContent)}"</div>
+          <div class="validation-status">❌ 未使用 Typography</div>
+        </div>
+      `).join('');
+    }
+    
     // HTML 转义
     function escapeHtml(text) {
       if (!text) return '';
@@ -475,6 +600,16 @@
           fontLibrary = message.data;
           if (document.getElementById('libraryTab').classList.contains('active')) {
             renderLibrary();
+          }
+          break;
+          
+        case 'validation-results':
+          validationResults = message.data;
+          if (document.getElementById('validateTab').classList.contains('active')) {
+            renderValidationResults();
+          } else {
+            // 如果不在校验页面，更新计数
+            validateCountEl.textContent = validationResults.length > 0 ? `(${validationResults.length})` : '';
           }
           break;
       }
