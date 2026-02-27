@@ -343,9 +343,53 @@
       font-size: 11px;
       padding: 2px 8px;
       border-radius: 10px;
+      width: fit-content;
+    }
+    
+    .validation-status.invalid {
       background: #ffebee;
       color: #d32f2f;
-      width: fit-content;
+    }
+    
+    .validation-status.valid {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .validation-status-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-left: 16px;
+    }
+    
+    .color-item-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #000;
+    }
+    
+    /* 分区块：提取 / 标准库 内的子区块 */
+    .section-block {
+      margin-bottom: 20px;
+    }
+    
+    .section-block:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .font-list.section-list {
+      max-height: 220px;
     }
     
     .success-message {
@@ -364,68 +408,100 @@
   </style>
 </head>
 <body>
-  <h2>📝 字体库管理器</h2>
-  <p class="subtitle">选中 Frame 或 Layer，预览并确认添加到字体库</p>
+  <h2>📝 字体与规范检查</h2>
+  <p class="subtitle">提取 → 纳入标准库 → 校验页面是否符合规范</p>
   
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('preview')">📋 提取预览</button>
-    <button class="tab" onclick="switchTab('library')">📚 我的字体库 <span id="libCount"></span></button>
+    <button class="tab active" onclick="switchTab('extract')">📤 提取</button>
+    <button class="tab" onclick="switchTab('library')">📚 标准库 <span id="libCount"></span></button>
     <button class="tab" onclick="switchTab('validate')">🔍 字体校验 <span id="validateCount"></span></button>
   </div>
   
-  <!-- 预览 Tab -->
-  <div id="previewTab" class="tab-content active">
-    <div class="tip">💡 选中 Figma 中的节点，下方会显示检测到的字体。勾选后点击「确认添加」保存到字体库。</div>
+  <!-- Tab1: 提取（字体 + 颜色） -->
+  <div id="extractTab" class="tab-content active">
+    <div class="tip">💡 选中 Figma 中的 Frame 或 Layer，下方会显示检测到的字体与颜色，勾选后「确认添加」纳入标准库。</div>
     
-    <h3>
-      检测到的字体
-      <span id="previewCount" class="selection-count">0</span>
-    </h3>
-    
-    <div id="previewList" class="font-list">
-      <div class="empty-state">请在 Figma 中选择包含文本的 Frame 或 Layer</div>
+    <div class="section-block">
+      <div class="section-title">
+        <span>📋 字体</span>
+        <span id="previewCount" class="selection-count">0</span>
+      </div>
+      <div id="previewList" class="font-list section-list">
+        <div class="empty-state">请选择包含文本的 Frame 或 Layer</div>
+      </div>
+      <div class="actions">
+        <div class="actions-left">
+          <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+          <button class="btn btn-secondary" onclick="deselectAll()">取消全选</button>
+        </div>
+        <div class="actions-right">
+          <button class="btn btn-primary" id="confirmBtn" onclick="confirmFonts()" disabled>确认添加到字体库</button>
+        </div>
+      </div>
     </div>
     
-    <div class="actions">
-      <div class="actions-left">
-        <button class="btn btn-secondary" onclick="selectAll()">全选</button>
-        <button class="btn btn-secondary" onclick="deselectAll()">取消全选</button>
+    <div class="divider"></div>
+    
+    <div class="section-block">
+      <div class="section-title">
+        <span>🎨 颜色（有名称的填充样式）</span>
+        <span id="colorPreviewCount" class="selection-count">0</span>
       </div>
-      <div class="actions-right">
-        <button class="btn btn-primary" id="confirmBtn" onclick="confirmFonts()" disabled>确认添加</button>
+      <div id="colorPreviewList" class="font-list section-list">
+        <div class="empty-state">请选择包含填充样式的 Frame 或 Layer</div>
+      </div>
+      <div class="actions">
+        <div class="actions-left">
+          <button class="btn btn-secondary" onclick="colorSelectAll()">全选</button>
+          <button class="btn btn-secondary" onclick="colorDeselectAll()">取消全选</button>
+        </div>
+        <div class="actions-right">
+          <button class="btn btn-primary" id="confirmColorBtn" onclick="confirmColors()" disabled>确认添加到颜色库</button>
+        </div>
       </div>
     </div>
   </div>
   
-  <!-- 字体库 Tab -->
+  <!-- Tab2: 标准库（字体库 + 颜色规范） -->
   <div id="libraryTab" class="tab-content">
-    <h3>
-      已保存的字体库
-      <button class="btn btn-danger" onclick="clearLibrary()">清空</button>
-    </h3>
+    <div class="tip">当前已纳入的字体与颜色规范，将作为校验时的参考。</div>
     
-    <div class="tip">这些字体将作为后续检查的标准</div>
+    <div class="section-block">
+      <div class="section-title">
+        <span>📋 字体库</span>
+        <button class="btn btn-danger" onclick="clearLibrary()">清空</button>
+      </div>
+      <div id="libraryList" class="font-list section-list">
+        <div class="empty-state">暂无，请到「提取」中添加</div>
+      </div>
+    </div>
     
-    <div id="libraryList" class="font-list">
-      <div class="empty-state">字体库为空，先去「提取预览」添加字体吧</div>
+    <div class="divider"></div>
+    
+    <div class="section-block">
+      <div class="section-title">
+        <span>🎨 颜色规范</span>
+        <button class="btn btn-danger" onclick="clearColorLibrary()">清空</button>
+      </div>
+      <div id="colorLibraryList" class="font-list section-list">
+        <div class="empty-state">暂无，请到「提取」中添加</div>
+      </div>
     </div>
   </div>
   
-  <!-- 字体校验 Tab -->
+  <!-- Tab3: 字体校验 -->
   <div id="validateTab" class="tab-content">
-    <div class="tip">🔍 扫描当前页面所有 Frame，检查文本是否使用了 Typography 样式。未使用的会列出所在 Frame 名称方便搜索。</div>
+    <div class="tip">🔍 扫描当前页面，检查文本是否使用 Typography、颜色是否使用有名称的填充样式。不符合的会列出所在 Frame 与具体问题，点击可定位到节点。</div>
     
-    <h3>
-      校验结果
+    <div class="section-title" style="margin-bottom: 12px;">
+      <span>校验结果</span>
       <span id="validateResultCount" class="selection-count">0</span>
-    </h3>
-    
+    </div>
     <div class="actions" style="margin-bottom: 12px;">
       <button class="btn btn-primary" onclick="startValidation()">🔍 开始扫描</button>
     </div>
-    
     <div id="validateList" class="font-list">
-      <div class="empty-state">点击「开始扫描」检查页面字体规范</div>
+      <div class="empty-state">点击「开始扫描」检查页面规范</div>
     </div>
   </div>
 
@@ -436,30 +512,40 @@
     let selectedIndices = new Set();
     // 字体库
     let fontLibrary = [];
+    // 颜色预览列表
+    let previewColors = [];
+    let selectedColorIndices = new Set();
+    let colorLibrary = [];
     // 校验结果
     let validationResults = [];
     
     const previewListEl = document.getElementById('previewList');
     const libraryListEl = document.getElementById('libraryList');
+    const colorPreviewListEl = document.getElementById('colorPreviewList');
+    const colorLibraryListEl = document.getElementById('colorLibraryList');
     const validateListEl = document.getElementById('validateList');
     const previewCountEl = document.getElementById('previewCount');
     const libCountEl = document.getElementById('libCount');
+    const colorPreviewCountEl = document.getElementById('colorPreviewCount');
     const validateCountEl = document.getElementById('validateCount');
     const validateResultCountEl = document.getElementById('validateResultCount');
     const confirmBtn = document.getElementById('confirmBtn');
+    const confirmColorBtn = document.getElementById('confirmColorBtn');
     
-    // Tab 切换
+    // Tab 切换（三栏：提取 / 标准库 / 字体校验）
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      
-      if (tab === 'preview') {
+      if (tab === 'extract') {
         document.querySelector('.tab:nth-child(1)').classList.add('active');
-        document.getElementById('previewTab').classList.add('active');
+        document.getElementById('extractTab').classList.add('active');
+        renderPreview();
+        renderColorPreview();
       } else if (tab === 'library') {
         document.querySelector('.tab:nth-child(2)').classList.add('active');
         document.getElementById('libraryTab').classList.add('active');
         renderLibrary();
+        renderColorLibrary();
       } else if (tab === 'validate') {
         document.querySelector('.tab:nth-child(3)').classList.add('active');
         document.getElementById('validateTab').classList.add('active');
@@ -500,10 +586,10 @@
     
     // 渲染字体库
     function renderLibrary() {
-      libCountEl.textContent = fontLibrary.length > 0 ? `(${fontLibrary.length})` : '';
-      
+      const total = fontLibrary.length + colorLibrary.length;
+      libCountEl.textContent = total > 0 ? `(${total})` : '';
       if (fontLibrary.length === 0) {
-        libraryListEl.innerHTML = '<div class="empty-state">字体库为空，先去「提取预览」添加字体吧</div>';
+        libraryListEl.innerHTML = '<div class="empty-state">暂无，请到「提取」中添加</div>';
         return;
       }
       
@@ -582,13 +668,86 @@
       parent.postMessage({ pluginMessage: { type: 'validate-fonts' } }, '*');
     }
     
-    // 渲染校验结果
+    // 颜色规范：渲染预览列表（与字体一致，选中即自动更新）
+    function renderColorPreview() {
+      colorPreviewCountEl.textContent = previewColors.length;
+      if (previewColors.length === 0) {
+        colorPreviewListEl.innerHTML = '<div class="empty-state">请选择包含填充样式的 Frame 或 Layer</div>';
+        confirmColorBtn.disabled = true;
+        confirmColorBtn.textContent = '确认添加';
+        return;
+      }
+      colorPreviewListEl.innerHTML = previewColors.map((c, i) => `
+        <div class="font-item">
+          <input type="checkbox" class="font-checkbox" ${selectedColorIndices.has(i) ? 'checked' : ''} onchange="toggleColorSelection(${i})">
+          <div class="font-info">
+            <div class="color-item-name">${escapeHtml(c.name)}</div>
+          </div>
+        </div>
+      `).join('');
+      confirmColorBtn.disabled = selectedColorIndices.size === 0;
+      confirmColorBtn.textContent = `确认添加 (${selectedColorIndices.size})`;
+    }
+    
+    function toggleColorSelection(i) {
+      if (selectedColorIndices.has(i)) selectedColorIndices.delete(i);
+      else selectedColorIndices.add(i);
+      renderColorPreview();
+    }
+    
+    function colorSelectAll() {
+      for (let i = 0; i < previewColors.length; i++) selectedColorIndices.add(i);
+      renderColorPreview();
+    }
+    
+    function colorDeselectAll() {
+      selectedColorIndices.clear();
+      renderColorPreview();
+    }
+    
+    function confirmColors() {
+      const toAdd = Array.from(selectedColorIndices).map(i => previewColors[i]);
+      parent.postMessage({ pluginMessage: { type: 'confirm-colors', data: toAdd } }, '*');
+      selectedColorIndices.clear();
+      renderColorPreview();
+    }
+    
+    function renderColorLibrary() {
+      const total = fontLibrary.length + colorLibrary.length;
+      libCountEl.textContent = total > 0 ? `(${total})` : '';
+      if (colorLibrary.length === 0) {
+        colorLibraryListEl.innerHTML = '<div class="empty-state">暂无，请到「提取」中添加</div>';
+        return;
+      }
+      colorLibraryListEl.innerHTML = colorLibrary.map(c => `
+        <div class="font-item" data-color-id="${escapeHtml(c.id || '')}">
+          <div class="font-info">
+            <div class="color-item-name">${escapeHtml(c.name)}</div>
+          </div>
+          <div class="font-actions">
+            <button class="btn-icon" type="button" onclick="event.stopPropagation(); removeColor(this.closest('.font-item').dataset.colorId)" title="删除">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function removeColor(id) {
+      parent.postMessage({ pluginMessage: { type: 'remove-color', data: id } }, '*');
+    }
+    
+    function clearColorLibrary() {
+      if (confirm('确定要清空颜色规范库吗？')) {
+        parent.postMessage({ pluginMessage: { type: 'clear-color-library' } }, '*');
+      }
+    }
+    
+    // 渲染校验结果（含 Typography + 颜色双状态）
     function renderValidationResults() {
       validateCountEl.textContent = validationResults.length > 0 ? `(${validationResults.length})` : '';
       validateResultCountEl.textContent = validationResults.length;
 
       if (validationResults.length === 0) {
-        validateListEl.innerHTML = '<div class="empty-state">点击「开始扫描」检查页面字体规范</div>';
+        validateListEl.innerHTML = '<div class="empty-state">点击「开始扫描」检查页面字体与颜色规范</div>';
         return;
       }
 
@@ -596,6 +755,13 @@
         const frameName = escapeHtml(result.frameName || '未命名 Frame');
         const copyId = `copy-${index}`;
         const nodeId = (result.nodeId || '').replace(/"/g, '&quot;');
+        const typoStatus = result.typographyInvalid !== false;
+        const colorStatus = result.colorInvalid !== false;
+        const statusRows = [];
+        if (typoStatus) statusRows.push('<span class="validation-status invalid">Typography: ❌ 未使用</span>');
+        else statusRows.push('<span class="validation-status valid">Typography: ✅</span>');
+        if (colorStatus) statusRows.push('<span class="validation-status invalid">颜色: ❌ 未使用命名样式</span>');
+        else statusRows.push('<span class="validation-status valid">颜色: ✅</span>');
         return `
         <div class="validation-item validation-item-clickable" data-node-id="${nodeId}" onclick="handleValidationItemClick(event)" title="点击定位到画布中的该文本节点">
           <div class="validation-parent">
@@ -604,7 +770,7 @@
           </div>
           <div class="validation-node">文本节点: ${escapeHtml(result.nodeName)} (${result.nodeType})</div>
           <div class="validation-text">"${escapeHtml(result.textContent)}"</div>
-          <div class="validation-status">❌ 未使用 Typography</div>
+          <div class="validation-status-row">${statusRows.join('')}</div>
         </div>
       `}).join('');
     }
@@ -650,8 +816,11 @@
       switch (message.type) {
         case 'no-selection':
           previewFonts = [];
+          previewColors = [];
           selectedIndices.clear();
+          selectedColorIndices.clear();
           renderPreview();
+          renderColorPreview();
           break;
           
         case 'preview-fonts':
@@ -669,6 +838,24 @@
           if (document.getElementById('libraryTab').classList.contains('active')) {
             renderLibrary();
           }
+          libCountEl.textContent = (fontLibrary.length + colorLibrary.length) > 0 ? `(${fontLibrary.length + colorLibrary.length})` : '';
+          break;
+          
+        case 'preview-colors':
+          previewColors = message.data || [];
+          selectedColorIndices.clear();
+          for (let i = 0; i < previewColors.length; i++) selectedColorIndices.add(i);
+          if (document.getElementById('extractTab').classList.contains('active')) {
+            renderColorPreview();
+          }
+          break;
+          
+        case 'color-library-update':
+          colorLibrary = message.data || [];
+          if (document.getElementById('libraryTab').classList.contains('active')) {
+            renderColorLibrary();
+          }
+          libCountEl.textContent = (fontLibrary.length + colorLibrary.length) > 0 ? `(${fontLibrary.length + colorLibrary.length})` : '';
           break;
           
         case 'validation-results':
