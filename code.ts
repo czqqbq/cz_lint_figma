@@ -154,12 +154,27 @@ interface ValidationResult {
   nodeType: string;
   textContent: string;
   parentName?: string;
+  frameName?: string;
+}
+
+// 获取节点所在的最近 Frame 名称
+function getFrameName(node: SceneNode): string | undefined {
+  let current: SceneNode | null = node;
+  while (current) {
+    // 检查当前节点是否是 Frame 或 Component 或 Page
+    if (current.type === 'FRAME' || current.type === 'COMPONENT' || current.type === 'COMPONENT_SET') {
+      return current.name;
+    }
+    // 向上查找父节点
+    current = current.parent as SceneNode | null;
+  }
+  return undefined;
 }
 
 // 递归扫描页面，找出没有 Typography 的文本节点
 async function scanPageForValidation(): Promise<ValidationResult[]> {
   const results: ValidationResult[] = [];
-  
+
   async function scanNode(node: SceneNode, parentName?: string) {
     // 如果是文本节点，检查是否有 Typography
     if (node.type === 'TEXT') {
@@ -170,7 +185,8 @@ async function scanPageForValidation(): Promise<ValidationResult[]> {
           nodeName: node.name,
           nodeType: node.type,
           textContent: node.characters.substring(0, 50), // 只显示前50个字符
-          parentName: parentName
+          parentName: parentName,
+          frameName: getFrameName(node)
         });
       } else if (typeof textStyleId === 'string') {
         // 有 textStyleId，但需要检查是否对应有效的 Typography
@@ -183,12 +199,13 @@ async function scanPageForValidation(): Promise<ValidationResult[]> {
             nodeName: node.name,
             nodeType: node.type,
             textContent: node.characters.substring(0, 50),
-            parentName: parentName
+            parentName: parentName,
+            frameName: getFrameName(node)
           });
         }
       }
     }
-    
+
     // 递归遍历子节点，传递当前节点名字作为父级名字
     if ('children' in node && Array.isArray(node.children)) {
       for (const child of node.children) {
@@ -196,12 +213,12 @@ async function scanPageForValidation(): Promise<ValidationResult[]> {
       }
     }
   }
-  
+
   // 扫描当前页面的所有顶层节点
   for (const node of figma.currentPage.children) {
     await scanNode(node);
   }
-  
+
   return results;
 }
 

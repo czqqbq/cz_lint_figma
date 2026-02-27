@@ -286,6 +286,33 @@
       content: "📁";
       font-size: 10px;
     }
+
+    .frame-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-copy {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: #f0f0f0;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-copy:hover {
+      background: #18a0fb;
+      color: white;
+    }
     
     .validation-node {
       font-size: 11px;
@@ -551,20 +578,41 @@
     function renderValidationResults() {
       validateCountEl.textContent = validationResults.length > 0 ? `(${validationResults.length})` : '';
       validateResultCountEl.textContent = validationResults.length;
-      
+
       if (validationResults.length === 0) {
         validateListEl.innerHTML = '<div class="empty-state">点击「开始扫描」检查页面字体规范</div>';
         return;
       }
-      
-      validateListEl.innerHTML = validationResults.map(result => `
+
+      validateListEl.innerHTML = validationResults.map((result, index) => {
+        const frameName = escapeHtml(result.frameName || result.parentName || '未命名 Frame');
+        const copyId = `copy-${index}`;
+        return `
         <div class="validation-item">
-          <div class="validation-parent">${escapeHtml(result.parentName || '未命名图层')}</div>
+          <div class="validation-parent">
+            <span class="frame-name" id="frame-${index}" data-name="${frameName.replace(/"/g, '&quot;')}">${frameName}</span>
+            <button class="btn-copy" id="${copyId}" onclick="copyFrameName(${index})" title="复制 Frame 名称">📋</button>
+          </div>
           <div class="validation-node">文本节点: ${escapeHtml(result.nodeName)} (${result.nodeType})</div>
           <div class="validation-text">"${escapeHtml(result.textContent)}"</div>
           <div class="validation-status">❌ 未使用 Typography</div>
         </div>
-      `).join('');
+      `}).join('');
+    }
+
+    // 复制 Frame 名称到剪贴板
+    function copyFrameName(index) {
+      const frameName = document.getElementById(`frame-${index}`).getAttribute('data-name');
+      navigator.clipboard.writeText(frameName).then(() => {
+        const btn = document.getElementById(`copy-${index}`);
+        const originalText = btn.textContent;
+        btn.textContent = '✅';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 1500);
+      }).catch(err => {
+        console.error('复制失败:', err);
+      });
     }
     
     // HTML 转义
