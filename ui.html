@@ -405,7 +405,7 @@
   
   <!-- 字体校验 Tab -->
   <div id="validateTab" class="tab-content">
-    <div class="tip">🔍 扫描当前页面所有 Frame/Layer，检查文本是否使用了 Typography 样式。未使用的会列出父级 Layer 名称方便搜索。</div>
+    <div class="tip">🔍 扫描当前页面所有 Frame，检查文本是否使用了 Typography 样式。未使用的会列出所在 Frame 名称方便搜索。</div>
     
     <h3>
       校验结果
@@ -585,7 +585,7 @@
       }
 
       validateListEl.innerHTML = validationResults.map((result, index) => {
-        const frameName = escapeHtml(result.frameName || result.parentName || '未命名 Frame');
+        const frameName = escapeHtml(result.frameName || '未命名 Frame');
         const copyId = `copy-${index}`;
         return `
         <div class="validation-item">
