@@ -150,6 +150,7 @@ figma.on('selectionchange', () => {
 
 // 校验结果接口
 interface ValidationResult {
+  nodeId: string;
   nodeName: string;
   nodeType: string;
   textContent: string;
@@ -157,18 +158,17 @@ interface ValidationResult {
   frameName?: string;
 }
 
-// 获取节点所在的最近 Frame 名称
+// 获取节点所在的最外层 Frame 名称（从当前节点向上遍历到根，取最后一个 Frame）
 function getFrameName(node: SceneNode): string | undefined {
   let current: SceneNode | null = node;
+  let outermostFrameName: string | undefined;
   while (current) {
-    // 检查当前节点是否是 Frame 或 Component 或 Page
-    if (current.type === 'FRAME' || current.type === 'COMPONENT' || current.type === 'COMPONENT_SET') {
-      return current.name;
+    if (current.type === 'FRAME') {
+      outermostFrameName = current.name;
     }
-    // 向上查找父节点
     current = current.parent as SceneNode | null;
   }
-  return undefined;
+  return outermostFrameName;
 }
 
 // 递归扫描页面，找出没有 Typography 的文本节点
@@ -182,6 +182,7 @@ async function scanPageForValidation(): Promise<ValidationResult[]> {
       // 如果没有绑定 Typography 样式，或者样式 ID 无效
       if (!textStyleId || (typeof textStyleId === 'symbol')) {
         results.push({
+          nodeId: node.id,
           nodeName: node.name,
           nodeType: node.type,
           textContent: node.characters.substring(0, 50), // 只显示前50个字符
@@ -196,6 +197,7 @@ async function scanPageForValidation(): Promise<ValidationResult[]> {
         const style = cachedTextStyles.find(s => s.id === textStyleId);
         if (!style || !style.name) {
           results.push({
+            nodeId: node.id,
             nodeName: node.name,
             nodeType: node.type,
             textContent: node.characters.substring(0, 50),
@@ -264,7 +266,21 @@ figma.ui.onmessage = async (msg) => {
         data: validationResults
       });
       break;
-      
+
+    case 'focus-node': {
+      // 点击校验项：选中并滚动到该文本节点
+      const targetNodeId: string = msg.data;
+      const targetNode = await figma.getNodeByIdAsync(targetNodeId);
+      if (targetNode && 'type' in targetNode) {
+        figma.currentPage.selection = [targetNode as SceneNode];
+        figma.viewport.scrollAndZoomIntoView([targetNode as SceneNode]);
+        figma.notify('已定位到该文本节点');
+      } else {
+        figma.notify('节点不存在或已被删除');
+      }
+      break;
+    }
+
     case 'close':
       figma.closePlugin();
       break;

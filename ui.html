@@ -273,6 +273,14 @@
       background: #fafafa;
     }
     
+    .validation-item-clickable {
+      cursor: pointer;
+    }
+    
+    .validation-item-clickable:hover {
+      background: #e8f4fd;
+    }
+    
     .validation-parent {
       font-size: 12px;
       font-weight: 600;
@@ -587,17 +595,29 @@
       validateListEl.innerHTML = validationResults.map((result, index) => {
         const frameName = escapeHtml(result.frameName || '未命名 Frame');
         const copyId = `copy-${index}`;
+        const nodeId = (result.nodeId || '').replace(/"/g, '&quot;');
         return `
-        <div class="validation-item">
+        <div class="validation-item validation-item-clickable" data-node-id="${nodeId}" onclick="handleValidationItemClick(event)" title="点击定位到画布中的该文本节点">
           <div class="validation-parent">
             <span class="frame-name" id="frame-${index}" data-name="${frameName.replace(/"/g, '&quot;')}">${frameName}</span>
-            <button class="btn-copy" id="${copyId}" onclick="copyFrameName(${index})" title="复制 Frame 名称">📋</button>
+            <button class="btn-copy" type="button" id="${copyId}" onclick="event.stopPropagation(); copyFrameName(${index})" title="复制 Frame 名称">📋</button>
           </div>
           <div class="validation-node">文本节点: ${escapeHtml(result.nodeName)} (${result.nodeType})</div>
           <div class="validation-text">"${escapeHtml(result.textContent)}"</div>
           <div class="validation-status">❌ 未使用 Typography</div>
         </div>
       `}).join('');
+    }
+    
+    // 点击校验项：通知主线程定位到该节点（复制按钮已 stopPropagation，不会触发）
+    function handleValidationItemClick(event) {
+      const el = event.currentTarget;
+      const nodeId = el && el.dataset && el.dataset.nodeId;
+      if (nodeId) focusOnNode(nodeId);
+    }
+    
+    function focusOnNode(nodeId) {
+      parent.postMessage({ pluginMessage: { type: 'focus-node', data: nodeId } }, '*');
     }
 
     // 复制 Frame 名称到剪贴板
